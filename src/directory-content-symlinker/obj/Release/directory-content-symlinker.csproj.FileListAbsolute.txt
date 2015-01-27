@@ -1,0 +1,6 @@
+D:\Development\Temp\directory-content-symlinker\dist\symlinker.exe.config
+D:\Development\Temp\directory-content-symlinker\dist\symlinker.exe
+D:\Development\Temp\directory-content-symlinker\dist\symlinker.pdb
+D:\Development\Temp\directory-content-symlinker\src\directory-content-symlinker\obj\Release\directory-content-symlinker.csprojResolveAssemblyReference.cache
+D:\Development\Temp\directory-content-symlinker\src\directory-content-symlinker\obj\Release\symlinker.exe
+D:\Development\Temp\directory-content-symlinker\src\directory-content-symlinker\obj\Release\symlinker.pdb
