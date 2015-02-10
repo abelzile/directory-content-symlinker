@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CommandRunner.cs" />
     <Compile Include="FileFinder.cs" />
     <Compile Include="FileMatch.cs" />
     <Compile Include="FileMatchSymlinker.cs" />

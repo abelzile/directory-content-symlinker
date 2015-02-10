@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using Mono.Options;
 
 
@@ -15,7 +16,7 @@ namespace DirectoryContentSymlinker
             string symlinkPath = "";
             string searchPattern = "";
 
-            var p = new OptionSet() {
+            var p = new OptionSet {
                 {
                     "h|help",  
                     "Show this message and exit.", 
@@ -24,26 +25,12 @@ namespace DirectoryContentSymlinker
                 {
                     "t|target=", 
                     "The {PATH} to the files symlinks will refer to.", 
-                    v =>
-                    {
-                        if (string.IsNullOrWhiteSpace(v))
-                        {
-                            throw new OptionException("Missing target path.", "-t");
-                        }
-                        targetPath = v;
-                    } 
+                    v => targetPath = v 
                 },
                 {
                     "d|destination=", 
                     "The {PATH} to the files symlinks will be created for.", 
-                    v =>
-                    {
-                        if (string.IsNullOrWhiteSpace(v))
-                        {
-                            throw new OptionException("Missing symlink creation path.", "-d");
-                        }
-                        symlinkPath = v;
-                    } 
+                    v => symlinkPath = v 
                 },
                 {
                     "s|searchPattern=", 
@@ -71,20 +58,19 @@ namespace DirectoryContentSymlinker
                 }
 
                 Console.WriteLine("Starting...");
-
                 Console.WriteLine("Finding files in target directory...");
 
                 var targetFinder = new FileFinder(targetPath, searchPattern);
                 targetFinder.Find();
 
                 Console.WriteLine("{0} files found in target directory.", targetFinder.Files.Count);
-
                 Console.WriteLine("Finding files in destination directory...");
 
                 var destinationFinder = new FileFinder(symlinkPath, searchPattern);
                 destinationFinder.Find();
 
                 Console.WriteLine("{0} files found in destination directory.", destinationFinder.Files.Count);
+                Console.WriteLine("Finding matching files. This can take some time...");
 
                 var matchFinder = new MatchFinder(targetFinder, destinationFinder);
                 matchFinder.Find();
@@ -97,11 +83,13 @@ namespace DirectoryContentSymlinker
                 {
                     Console.WriteLine("Making symbolic links...");
 
-                    foreach (var fileMatch in matchFinder.Matches)
-                    {
-                        var linker = new FileMatchSymlinker(fileMatch);
-                        linker.Create();
-                    }
+                    Parallel.ForEach(
+                        matchFinder.Matches,
+                        match =>
+                        {
+                            var linker = new FileMatchSymlinker(match);
+                            linker.Create();
+                        });
                 }
 
                 Console.WriteLine("Done. Exiting.");
@@ -110,36 +98,25 @@ namespace DirectoryContentSymlinker
             {
                 Console.WriteLine(e.Message);
                 Console.WriteLine("Try `--help' for more information.");
-                Console.ReadKey();
             }
         }
 
         static void ValidatePaths(string targetPath, string symlinkPath)
         {
-            if (string.IsNullOrWhiteSpace(targetPath))
-            {
+            if (string.IsNullOrWhiteSpace(targetPath)) 
                 throw new OptionException("Missing target path.", "-t");
-            }
 
-            if (!Directory.Exists(targetPath))
-            {
+            if (!Directory.Exists(targetPath)) 
                 throw new OptionException("Target path does not exist or is invalid.", "-t");
-            }
 
-            if (string.IsNullOrWhiteSpace(symlinkPath))
-            {
+            if (string.IsNullOrWhiteSpace(symlinkPath)) 
                 throw new OptionException("Missing symlink destination path.", "-d");
-            }
 
-            if (!Directory.Exists(symlinkPath))
-            {
+            if (!Directory.Exists(symlinkPath)) 
                 throw new OptionException("Symlink destination path does not exist or is invalid.", "-d");
-            }
 
-            if (string.Compare(targetPath, symlinkPath, StringComparison.OrdinalIgnoreCase) == 0)
-            {
+            if (string.Compare(targetPath, symlinkPath, StringComparison.OrdinalIgnoreCase) == 0) 
                 throw new OptionException("Target path and destination path cannot be the same.", "-d");
-            }
         }
     }
 }

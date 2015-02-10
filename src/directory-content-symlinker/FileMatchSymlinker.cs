@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+﻿using System;
 using System.IO;
 using Microsoft.VisualBasic.FileIO;
 
@@ -22,18 +22,11 @@ namespace DirectoryContentSymlinker
 
             File.Move(_fileMatch.LinkPath, tempLinkFileName);
 
-            string cmd = string.Format(MklinkCmdFormat, _fileMatch.LinkPath, _fileMatch.TargetPath);
+            var commandRunner = new CommandRunner(string.Format(MklinkCmdFormat, _fileMatch.LinkPath, _fileMatch.TargetPath));
+            commandRunner.Run();
 
-            var process = new ProcessStartInfo("cmd.exe", cmd)
-            {
-                CreateNoWindow = true,
-                UseShellExecute = true,
-                WindowStyle = ProcessWindowStyle.Hidden
-            };
-
-            var p = Process.Start(process);
-            p.WaitForExit();
-            int exitCode = p.ExitCode;
+            if (commandRunner.ExitCode != 0 || !string.IsNullOrWhiteSpace(commandRunner.StandardError))
+                throw new Exception(commandRunner.StandardError);
             
             FileSystem.DeleteFile(tempLinkFileName, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
         }
