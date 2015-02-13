@@ -1,1 +1,0 @@
-msbuild src\directory-content-symlinker-vs2013.sln /t:Clean;Build /p:Configuration=Release /v:n /p:OutputPath=$(MSBuildStartupDirectory)\..\..\..\dist\
