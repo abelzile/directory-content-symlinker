@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using Mono.Options;
@@ -87,6 +88,8 @@ namespace DirectoryContentSymlinker
                         matchFinder.Matches,
                         match =>
                         {
+                            Console.WriteLine("Linking " + ShortenPath(match.TargetPath));
+
                             var linker = new FileMatchSymlinker(match);
                             linker.Create();
                         });
@@ -99,6 +102,25 @@ namespace DirectoryContentSymlinker
                 Console.WriteLine(e.Message);
                 Console.WriteLine("Try `--help' for more information.");
             }
+
+            if (Debugger.IsAttached)
+            {
+                Console.WriteLine("Click any key to exit.");
+                Console.ReadKey();
+            }
+        }
+
+        static string ShortenPath(string path)
+        {
+            int first = path.IndexOf(@"\", StringComparison.OrdinalIgnoreCase);
+            int last = path.LastIndexOf(@"\", StringComparison.OrdinalIgnoreCase);
+
+            if (first == -1 || last == -1 || first == last) return path;
+
+            string part1 = path.Substring(0, first + 1);
+            string part2 = path.Substring(last + 1);
+
+            return part1 + @"...\" + part2;
         }
 
         static void ValidatePaths(string targetPath, string symlinkPath)

@@ -25,7 +25,7 @@ namespace DirectoryContentSymlinker
             var commandRunner = new CommandRunner(string.Format(MklinkCmdFormat, _fileMatch.LinkPath, _fileMatch.TargetPath));
             commandRunner.Run();
 
-            if (commandRunner.ExitCode != 0 || !string.IsNullOrWhiteSpace(commandRunner.StandardError))
+            if (commandRunner.ExitCode != 0)
                 throw new Exception(commandRunner.StandardError);
             
             FileSystem.DeleteFile(tempLinkFileName, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);

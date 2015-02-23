@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 
 
 namespace DirectoryContentSymlinker
@@ -13,9 +16,9 @@ namespace DirectoryContentSymlinker
 
         readonly FileFinder _target;
         readonly FileFinder _destination;
-        readonly Dictionary<string, byte[]> _targetFileHashDict = new Dictionary<string, byte[]>();
-        readonly Dictionary<string, byte[]> _destinationFileHashDict = new Dictionary<string, byte[]>();
-        readonly List<FileMatch> _matches = new List<FileMatch>();
+        readonly ConcurrentDictionary<string, byte[]> _targetFileHashDict = new ConcurrentDictionary<string, byte[]>();
+        readonly ConcurrentDictionary<string, byte[]> _destinationFileHashDict = new ConcurrentDictionary<string, byte[]>();
+        ConcurrentBag<FileMatch> _matches;
 
         public MatchFinder(FileFinder target, FileFinder destination)
         {
@@ -25,49 +28,53 @@ namespace DirectoryContentSymlinker
 
         public IList<FileMatch> Matches
         {
-            get { return _matches.AsReadOnly(); }
+            get { return _matches.ToList().AsReadOnly(); }
         }
 
         public void Find()
         {
-            _matches.Clear();
+            // ReSharper disable AccessToForEachVariableInClosure
+            _targetFileHashDict.Clear();
+            _destinationFileHashDict.Clear();
+            _matches = new ConcurrentBag<FileMatch>();
 
-            using (SHA512 shaM = SHA512Managed.Create())
+            foreach (var destinationFilePair in _destination.Files)
             {
-                foreach (var destinationFilePair in _destination.Files)
-                {
-                    foreach (var targetFilePair in _target.Files)
+                Parallel.ForEach(
+                    _target.Files,
+                    targetFilePair =>
                     {
-                        if (destinationFilePair.Value != targetFilePair.Value) continue;
-
+                        if (destinationFilePair.Value != targetFilePair.Value) return;
+                            
                         byte[] destinationChunk = FirstChunk(destinationFilePair.Key, destinationFilePair.Value);
                         byte[] targetChunk = FirstChunk(targetFilePair.Key, targetFilePair.Value);
 
-                        if (!ArraysEqual(destinationChunk, targetChunk)) continue;
+                        if (!ArraysEqual(destinationChunk, targetChunk)) return;
 
-                        byte[] destinationHash;
-                        if (!_destinationFileHashDict.TryGetValue(destinationFilePair.Key, out destinationHash))
+                        using (SHA512 shaM = SHA512Managed.Create())
                         {
-                            destinationHash = ComputeHash(destinationFilePair.Key, shaM);
-                            _destinationFileHashDict.Add(destinationFilePair.Key, destinationHash);
-                        }
+                            byte[] destinationHash;
+                            if (!_destinationFileHashDict.TryGetValue(destinationFilePair.Key, out destinationHash))
+                            {
+                                destinationHash = ComputeHash(destinationFilePair.Key, shaM);
+                                _destinationFileHashDict.TryAdd(destinationFilePair.Key, destinationHash);
+                            }
 
-                        byte[] targetHash;
-                        if (!_targetFileHashDict.TryGetValue(targetFilePair.Key, out targetHash))
-                        {
-                            targetHash = ComputeHash(targetFilePair.Key, shaM);
-                            _targetFileHashDict.Add(targetFilePair.Key, targetHash);
-                        }
+                            byte[] targetHash;
+                            if (!_targetFileHashDict.TryGetValue(targetFilePair.Key, out targetHash))
+                            {
+                                targetHash = ComputeHash(targetFilePair.Key, shaM);
+                                _targetFileHashDict.TryAdd(targetFilePair.Key, targetHash);
+                            }
 
-                        if (!ArraysEqual(destinationHash, targetHash)) continue;
+                            if (!ArraysEqual(destinationHash, targetHash)) return;
+                        }
 
                         var fileMatch = new FileMatch(targetFilePair.Key, destinationFilePair.Key);
                         _matches.Add(fileMatch);
-
-                        break;
-                    }
-                }
+                    });
             }
+            // ReSharper restore AccessToForEachVariableInClosure
         }
 
         static byte[] FirstChunk(string destinationFilePath, long fileSize)
