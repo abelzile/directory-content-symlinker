@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using DirectoryContentSymlinker.Core;
 using Mono.Options;
 
 
@@ -88,7 +89,7 @@ namespace DirectoryContentSymlinker
                         matchFinder.Matches,
                         match =>
                         {
-                            Console.WriteLine("Linking " + ShortenPath(match.TargetPath));
+                            Console.WriteLine("Linking to " + ShortenPath(match.TargetPath));
 
                             var linker = new FileMatchSymlinker(match);
                             linker.Create();

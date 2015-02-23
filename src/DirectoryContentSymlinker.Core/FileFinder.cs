@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 
 
-namespace DirectoryContentSymlinker
+namespace DirectoryContentSymlinker.Core
 {
     public class FileFinder
     {

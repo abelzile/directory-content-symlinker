@@ -4,4 +4,4 @@ msbuild src\directory-content-symlinker-vs2013.sln /t:Rebuild /p:Configuration=R
 
 del dist\*.* /F /Q
 
-xcopy  src\directory-content-symlinker\bin\Release\*.* dist
+xcopy  src\DirectoryContentSymlinker.Cli\bin\Release\*.* dist

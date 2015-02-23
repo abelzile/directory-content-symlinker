@@ -7,7 +7,7 @@ using System.Security.Cryptography;
 using System.Threading.Tasks;
 
 
-namespace DirectoryContentSymlinker
+namespace DirectoryContentSymlinker.Core
 {
     public class MatchFinder
     {

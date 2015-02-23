@@ -4,7 +4,7 @@ using System.Text;
 using System.Threading;
 
 
-namespace DirectoryContentSymlinker
+namespace DirectoryContentSymlinker.Core
 {
     public class CommandRunner
     {

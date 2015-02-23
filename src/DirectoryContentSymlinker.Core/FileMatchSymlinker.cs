@@ -3,7 +3,7 @@ using System.IO;
 using Microsoft.VisualBasic.FileIO;
 
 
-namespace DirectoryContentSymlinker
+namespace DirectoryContentSymlinker.Core
 {
     public class FileMatchSymlinker
     {

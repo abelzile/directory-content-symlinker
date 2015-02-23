@@ -1,4 +1,4 @@
-﻿namespace DirectoryContentSymlinker
+﻿namespace DirectoryContentSymlinker.Core
 {
     public class FileMatch
     {
