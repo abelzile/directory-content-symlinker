@@ -36,6 +36,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommandRunner.cs" />
@@ -43,10 +44,18 @@
     <Compile Include="FileMatch.cs" />
     <Compile Include="FileMatchSymlinker.cs" />
     <Compile Include="MatchFinder.cs" />
+    <Compile Include="Utils\ArrayUtil.cs" />
+    <Compile Include="Utils\ThreadSafeRandom.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.VisualBasic" />
     <Reference Include="System" />
+    <Reference Include="System.Data.HashFunction.Core">
+      <HintPath>..\packages\System.Data.HashFunction.Core.1.5.2.0\lib\net45\System.Data.HashFunction.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Data.HashFunction.MurmurHash">
+      <HintPath>..\packages\System.Data.HashFunction.MurmurHash.1.5.2.0\lib\net45\System.Data.HashFunction.MurmurHash.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

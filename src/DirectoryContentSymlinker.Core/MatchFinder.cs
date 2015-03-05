@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data.HashFunction;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
+using DirectoryContentSymlinker.Core.Utils;
 
 
 namespace DirectoryContentSymlinker.Core
@@ -33,11 +34,11 @@ namespace DirectoryContentSymlinker.Core
 
         public void Find()
         {
-            // ReSharper disable AccessToForEachVariableInClosure
             _targetFileHashDict.Clear();
             _destinationFileHashDict.Clear();
             _matches = new ConcurrentBag<FileMatch>();
 
+            // ReSharper disable AccessToForEachVariableInClosure
             foreach (var destinationFilePair in _destination.Files)
             {
                 Parallel.ForEach(
@@ -49,29 +50,32 @@ namespace DirectoryContentSymlinker.Core
                         byte[] destinationChunk = FirstChunk(destinationFilePair.Key, destinationFilePair.Value);
                         byte[] targetChunk = FirstChunk(targetFilePair.Key, targetFilePair.Value);
 
-                        if (!ArraysEqual(destinationChunk, targetChunk)) return;
+                        if (!ArrayUtil.ArraysEqual(destinationChunk, targetChunk)) return;
 
-                        using (SHA512 shaM = SHA512Managed.Create())
+                        IHashFunction hash = null;
+
+                        byte[] destinationHash;
+                        if (!_destinationFileHashDict.TryGetValue(destinationFilePair.Key, out destinationHash))
                         {
-                            byte[] destinationHash;
-                            if (!_destinationFileHashDict.TryGetValue(destinationFilePair.Key, out destinationHash))
-                            {
-                                destinationHash = ComputeHash(destinationFilePair.Key, shaM);
-                                _destinationFileHashDict.TryAdd(destinationFilePair.Key, destinationHash);
-                            }
+                            hash = CreateMurmurHash3();
 
-                            byte[] targetHash;
-                            if (!_targetFileHashDict.TryGetValue(targetFilePair.Key, out targetHash))
-                            {
-                                targetHash = ComputeHash(targetFilePair.Key, shaM);
-                                _targetFileHashDict.TryAdd(targetFilePair.Key, targetHash);
-                            }
-
-                            if (!ArraysEqual(destinationHash, targetHash)) return;
+                            destinationHash = ComputeHash(destinationFilePair.Key, hash);
+                            _destinationFileHashDict.TryAdd(destinationFilePair.Key, destinationHash);
                         }
 
-                        var fileMatch = new FileMatch(targetFilePair.Key, destinationFilePair.Key);
-                        _matches.Add(fileMatch);
+                        byte[] targetHash;
+                        if (!_targetFileHashDict.TryGetValue(targetFilePair.Key, out targetHash))
+                        {
+                            if (hash == null)
+                                hash = CreateMurmurHash3();
+
+                            targetHash = ComputeHash(targetFilePair.Key, hash);
+                            _targetFileHashDict.TryAdd(targetFilePair.Key, targetHash);
+                        }
+
+                        if (!ArrayUtil.ArraysEqual(destinationHash, targetHash)) return;
+
+                        _matches.Add(new FileMatch(targetFilePair.Key, destinationFilePair.Key));
                     });
             }
             // ReSharper restore AccessToForEachVariableInClosure
@@ -91,29 +95,17 @@ namespace DirectoryContentSymlinker.Core
             return firstChunk;
         }
 
-        static byte[] ComputeHash(string destinationFilePath, HashAlgorithm hashAlgorithm)
+        static MurmurHash3 CreateMurmurHash3()
+        {
+            return new MurmurHash3(128, (uint)ThreadSafeRandom.Next());
+        }
+
+        static byte[] ComputeHash(string destinationFilePath, IHashFunction hashFunction)
         {
             using (var fileStream = new BufferedStream(File.OpenRead(destinationFilePath), DefaultBufferChunkSize))
             {
-                return hashAlgorithm.ComputeHash(fileStream);
+                return hashFunction.ComputeHash(fileStream);
             }
         }
-
-        static bool ArraysEqual(byte[] a1, byte[] a2)
-        {
-            if (a1.Length == a2.Length)
-            {
-                for (int i = 0; i < a1.Length; i++)
-                {
-                    if (a1[i] != a2[i])
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            }
-            return false;
-        }
-
     }
 }
